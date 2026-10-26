@@ -1,6 +1,6 @@
 # Data
 
-Our Zenodo deposit [DOI] goes into `data/inputs/` and `data/results/`: embeddings, cell IDs and cell types of the analyzed cells,
+Our Zenodo deposit (10.5281/zenodo.23672147) goes into `data/inputs/` and `data/results/`: embeddings, cell IDs and cell types of the analyzed cells,
 language-model activations, reference markers, count checksums and all run results.
 
 Count data and gene sets are rebuilt from their sources into `data/built/` with `scripts/build_inputs.py`; the 1M-token language-model file is rebuilt into `data/inputs/`:

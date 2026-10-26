@@ -1,5 +1,7 @@
 # sae-groundtruth
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23671822.svg)](https://doi.org/10.5281/zenodo.23671822)
+
 Code for "Ground-truth evaluation of sparse autoencoder features on spatial, single-cell and language-model embeddings" (Shahsavand, Forghani et al., bioRxiv 2026).
 
 ## Install
@@ -10,7 +12,7 @@ pip install -r requirements.txt
 
 ## Data
 
-Download our Zenodo deposit [DOI] into `data/`, then rebuild the public count data:
+Download our Zenodo deposit ([10.5281/zenodo.23672147](https://doi.org/10.5281/zenodo.23672147)) into `data/`, then rebuild the public count data:
 
 ```
 python scripts/build_inputs.py A                          # Crowell et al., section 232 (Zenodo 10.5281/zenodo.15574384)
