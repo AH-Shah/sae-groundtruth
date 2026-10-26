@@ -17,6 +17,7 @@ python scripts/build_inputs.py A                          # Crowell et al., sect
 python scripts/build_inputs.py B path/to/S0_exprMat_file  # Bruker CosMx Human WTx Colon Dataset
 python scripts/build_inputs.py P path/to/pelka.h5ad       # Pelka et al. 2021 (GEO GSE178341)
 python scripts/build_inputs.py hallmark                   # MSigDB Hallmark 2020
+LLM_N=1000000 LLM_SPLIT=train-00000-of-00002 LLM_OUT=LLM_pythia70m_L3_1M.npz python scripts/embed_llm.py   # 1M-token activations
 ```
 
 See `data/README.md` for details. `data/genes_2000.tsv` lists the gene panel.
