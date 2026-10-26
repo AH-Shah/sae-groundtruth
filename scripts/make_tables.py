@@ -1,8 +1,5 @@
-"""[Ported from antig/N2/tools/92_sae_tables_v3.py by tools/97_port_scripts.py: paths (reads the deposited run CSVs in data/results, or SAEGT_RESULTS=results/runs for your own runs)]
-SAE paper tables v3 (row 337+): plain BatchTopK as the main SAE (cons = tsae_cons, single = tsae, varimax_topk at the tsae consensus L0),
-Matryoshka (msae_cons, msae) as appendix arms; rotations pca / varimax / ica from the base runs (deterministic). Sources: slides A (Expr50,
-CellCharter) + B (Expr50, CellCharter, CADAST); synthetic; Geneformer M 256; LLM (big 1M-token leg if present, else 50k leg).
-Win = |mean diff| > sd_a + sd_b over 3 seeds. -> trials/sae_paper/TABLES_v3.md, REAL_v3.csv, SYNTH_v3.csv"""
+"""Builds the paper's tables from the run results (data/results or SAEGT_RESULTS) -> results/.
+"""
 from pathlib import Path
 import numpy as np, pandas as pd
 import os
@@ -24,7 +21,7 @@ def real():
         for k in "ABP":
             o = rd(D / f"T2_{k}_unit_batch_rs0_{OLD}{t}.csv", s); keep = ["pca", "varimax", "ica"] + (["msae_cons", "msae"] if k != "P" else []); out.append(o[o.method.isin(keep)])
     d = pd.concat(out); d = d[d.apply(lambda r: r.input in KEEP[r.slide], axis=1)]
-    big = sorted(x for x in D.glob("T2_LLMbig_*.csv") if "thr0bug" not in x.name); llm = big or sorted(D.glob("T2_LLM_*.csv"))  # row 340
+    big = sorted(x for x in D.glob("T2_LLMbig_*.csv") if "thr0bug" not in x.name); llm = big or sorted(D.glob("T2_LLM_*.csv"))
     for f in llm:
         g = pd.read_csv(f); g["slide"] = "L"; g = g[g.method != "lpsae"]
         if not big: g = g[g.method != "varimax_topk"] if "tsae_cons" not in set(g.method) else g
@@ -35,7 +32,7 @@ def real():
 
 
 def coverage():
-    """distinct concepts covered (row 341): lineages (of 7) with >= 1 feature at selectivity >= .7, from the per-feature files of the same runs
+    """distinct concepts covered: lineages (of 7) with >= 1 feature at selectivity >= .7, from the per-feature files of the same runs
     real() reads; LLM uses n_cls (token classes of 8); synthetic uses distinct planted programs matched (of 28) in synth()."""
     cv = {}
     for s, t in SEEDS:

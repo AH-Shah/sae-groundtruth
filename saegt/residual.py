@@ -1,4 +1,4 @@
-"""Two-stage residual consensus SAE (CALCULUS §65e; row 339). Stage 1 = consensus of plain BatchTopK fits; its decoder is a ridge LS fit on
+"""Two-stage residual consensus SAE. Stage 1 = consensus of plain BatchTopK fits; its decoder is a ridge LS fit on
 the centred consensus codes; stage 2 = SAE (single or consensus) on the rescaled residual. Codes are returned for the fit rows and for all rows."""
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -22,7 +22,7 @@ def consensus2(Xf, X, cfg, seeds=(0, 1, 2, 3, 4), r_thr=.7, min_votes=3):
 
 
 def ls_residual(Zf, Xf, Za, Xa):
-    """§65e: ridge LS decoder on the fit rows' centred codes; residuals of fit rows and all rows (fit-row centring), variance share rho."""
+    """Ridge LS decoder on the fit rows' centred codes; residuals of fit rows and all rows (fit-row centring), variance share rho."""
     zm, xm = Zf.mean(0), Xf.mean(0); Zc = (Zf - zm).astype(np.float64); G = Zc.T @ Zc
     lam = 1e-6 * np.trace(G) / max(len(G), 1); D = np.linalg.solve(G + lam * np.eye(len(G)), Zc.T @ (Xf - xm))
     Rf = (Xf - xm) - Zc @ D; Ra = (Xa - xm) - (Za - zm) @ D; rho = float((Rf ** 2).sum() / ((Xf - xm) ** 2).sum())

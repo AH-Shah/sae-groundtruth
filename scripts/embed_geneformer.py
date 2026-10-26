@@ -1,11 +1,5 @@
-"""[Ported from antig/N2/tools/77_geneformer_embed.py by tools/97_port_scripts.py: paths; lineage map inlined (paper: run 1500)]
-Bio-embedding arm for the SAE paper (rows 306-308): Geneformer V2 (cached ctheodoris/Geneformer, 18 layers, d 1152) cell embeddings
-of the Pelka 2021 CRC scRNA reference (independent author labels ClusterMidway -> 9 lineages via tools/72 MAP).
-Tokenisation as Geneformer: counts / cell total * 1e4 / gene median (gc104M), rank non-zero genes, top 2046 (V1 length, MPS memory), <cls> ... <eos>;
-cell embedding = mean of the penultimate layer over gene tokens (Geneformer default emb_layer -1).
-
-usage: 77_geneformer_embed.py profile           -> timing on 32 cells
-       77_geneformer_embed.py run [per_lin 2500] -> trials/dsae/GF_pelka.npz (latent, barcodes, lineage, midway)
+"""Geneformer V2 embeddings of Pelka et al. cells (penultimate layer, mean over gene tokens).
+usage: python scripts/embed_geneformer.py run 1500   (needs PELKA_H5AD and the Geneformer model from Hugging Face)
 """
 from __future__ import annotations
 

@@ -1,6 +1,5 @@
 #!/bin/sh
-# Rerun every experiment in the paper from the deposited inputs (data/inputs), as the research queues did (antig/N2/tools/78*.sh):
-# ~25 GPU hours on an Apple M-series GPU. Outputs go to results/runs with the research file names; then build tables and figures with
+# All experiments in the paper (~25 GPU hours on an Apple M-series GPU. Outputs go to results/runs with the research file names; then build tables and figures with
 #   SAEGT_RESULTS=results/runs python scripts/make_tables.py && python scripts/make_figures.py
 # SAE fits on GPU are not bitwise deterministic: reruns reproduce the paper's numbers within the reported seed spread
 # (rotations and everything on CPU reproduce exactly; see tests/test_equivalence.py).

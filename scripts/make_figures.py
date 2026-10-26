@@ -1,6 +1,5 @@
-"""[Ported from antig/N2/tools/94_sae_figs_v3.py by tools/97_port_scripts.py: paths (run make_tables.py first)]
-SAE paper figures v3 (main SAE = plain BatchTopK; rows 337-340) from trials/sae_paper/{REAL,SYNTH}_v3.csv -> paper/figs/fig{1,2,3}_v3.{pdf,png}.
-Palette validated (dataviz validator, light mode: CVD/normal-vision PASS; low-contrast hues carry marker shape + legend)."""
+"""Figures 1-3 from results/REAL_v3.csv and results/SYNTH_v3.csv -> figures/.
+"""
 import numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from pathlib import Path
@@ -19,7 +18,7 @@ def legend(fig, ax, n, y=0):
 
 
 def fig1():
-    """x = R1, y = distinct concepts covered (row 341); faint lines join single and consensus SAE of the same embedding."""
+    """x = R1, y = distinct concepts covered; faint lines join single and consensus SAE of the same embedding."""
     fig, ax = plt.subplots(1, 4, figsize=(9.6, 2.8))
     srcs = [("Spatial (5 embeddings)", R[R.slide.isin(["A", "B"])], "lineages covered (of 7)", 7),
             ("Planted synthetic (3 settings)", S, "planted programs matched (of 28)", 28),

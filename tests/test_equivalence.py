@@ -1,10 +1,5 @@
-"""Equivalence of this repository with the research code that produced the paper (antig/N2 in the authors' workspace).
-
-Levels: (1) every library function: research vs repo on identical inputs, identical outputs (CPU, deterministic);
-(2) deposited inputs == the arrays the research readers return; (3) end-to-end: the deterministic arms (rotations) rerun through the repo
-scripts reproduce the paper's run CSVs exactly; (4) scripts/make_tables.py regenerates the research TABLES_v3.md byte for byte.
-Levels 1-2 need the research code (env SAEGT_RESEARCH=path/to/N2); levels 3-4 need only data/. Prints one PASS/FAIL line per check.
-usage: SAEGT_RESEARCH=/path/to/N2 python tests/test_equivalence.py [--quick]
+"""Checks the repository against the original analysis code (SAEGT_RESEARCH=path) and the deposited results.
+usage: python tests/test_equivalence.py [--quick]
 """
 import importlib.util, os, subprocess, sys, tempfile
 from pathlib import Path
@@ -55,7 +50,7 @@ def level1(s_old, r_old, ev, y_old, t, b):
     r_old._CACHE.clear(); r_new._CACHE.clear()
     check("residual.two_stage", same(r_old.two_stage(X[:2000], X, cfg, frac=.25, stage2="cons", seeds=(0, 1, 2)), r_new.two_stage(X[:2000], X, cfg, frac=.25, stage2="cons", seeds=(0, 1, 2))))
     hm = ev.f0.hallmark(); gs = np.array(sorted({x for v in hm.values() for x in v})[:2000]); tops = [list(g.choice(gs, 50, replace=False)) for _ in range(20)]
-    check("metrics.enrich (Hallmark)", all(same(ev.f0.enrich(tp, gs, hm), mt.enrich(tp, gs, hm)) for tp in tops) and same(hm, mt.hallmark(ROOT / "data/inputs/hallmark.json")))
+    check("metrics.enrich (Hallmark)", all(same(ev.f0.enrich(tp, gs, hm), mt.enrich(tp, gs, hm)) for tp in tops) and same(hm, mt.hallmark(ROOT / "data/built/hallmark.json")))
     import json; mk = json.load(open(Path(RES) / "trials/markers/markers.json"))["cosmx2000"]; mkg = sorted({x for v in mk.values() for x in v["seed"] + v["eval"]})
     tops = [list(g.choice(mkg, 50, replace=False)) for _ in range(50)]; ls = list(g.choice(mt.LINS, 50))
     check("metrics.ref_foreign / foreign_markers", all(t.ref_foreign(tp, l, mk) == mt.ref_foreign(tp, l, mk) for tp, l in zip(tops, ls)) and all(ev.f0.foreign_markers(";".join(tp), l) == mt.foreign_markers(";".join(tp), l) for tp, l in zip(tops, ls)))
@@ -70,12 +65,12 @@ def level2(t, ev):
     import anndata as ad, scipy.sparse as sp
     for key in ("A", "B"):
         c = t.SL[key]; a = ad.read_h5ad(c["h5"], backed="r"); bc = a.obs_names.astype(str).values; rows = np.sort(np.random.default_rng(0).choice(len(bc), 50000, replace=False))
-        z = np.load(ROOT / f"data/inputs/section_{key}.npz", allow_pickle=True); C = sp.csr_matrix((z["data"], z["indices"], z["indptr"]), shape=tuple(z["shape"]))
+        z = np.load(ROOT / f"data/inputs/section_{key}.npz", allow_pickle=True); cz = np.load(ROOT / f"data/built/counts_{key}.npz"); C = sp.csr_matrix((cz["data"], cz["indices"], cz["indptr"]), shape=tuple(cz["shape"]))
         ok = (C != sp.csr_matrix(a.X[rows]).astype(np.float32)).nnz == 0 and same(z["celltype"].astype(str), ev.labels(c["slide"], bc)[rows]) and same(z["genes"].astype(str), np.asarray(a.var_names).astype(str))
         for name in z["embeddings"]: ok = ok and same(z[f"emb_{name}"], t.read_latent(c["inputs"][name], bc)[rows])
-        check(f"deposited section_{key} == research readers (counts, labels, genes, {', '.join(z['embeddings'])})", ok)
-    E, C, genes, mid, bc = t.pelka_inputs(); z = np.load(ROOT / "data/inputs/pelka_geneformer.npz", allow_pickle=True)
-    check("deposited pelka_geneformer == research reader", same(z["emb_Geneformer"], E) and (sp.csr_matrix((z["data"], z["indices"], z["indptr"]), shape=tuple(z["shape"])) != C).nnz == 0 and same(z["celltype"].astype(str), mid))
+        check(f"deposited section_{key} + rebuilt counts == research readers (counts, labels, genes, {', '.join(z['embeddings'])})", ok)
+    E, C, genes, mid, bc = t.pelka_inputs(); z = np.load(ROOT / "data/inputs/pelka_geneformer.npz", allow_pickle=True); c = np.load(ROOT / "data/built/counts_P.npz")
+    check("deposited pelka_geneformer + rebuilt counts == research reader", same(z["emb_Geneformer"], E) and (sp.csr_matrix((c["data"], c["indices"], c["indptr"]), shape=tuple(c["shape"])) != C).nnz == 0 and same(z["celltype"].astype(str), mid) and same(z["genes"].astype(str), genes))
 
 
 def level3():

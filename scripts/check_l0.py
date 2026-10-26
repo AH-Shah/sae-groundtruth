@@ -1,6 +1,5 @@
-"""[Ported from antig/N2/tools/93_l0_check.py by tools/97_port_scripts.py: paths; needs the 1M-token embedding]
-row 340: why plain BatchTopK fits encode 227 active latents per held-out LLM token at k = 128. One fit on the 1M-token fit set (as tools/91),
-then: stored inference threshold vs the exact k-quantile recomputed on CPU from a 100k fit-row sample; L0 on fit rows vs held-out rows."""
+"""Checks the BatchTopK inference threshold on the 1M-token language-model data (Methods).
+"""
 import os, sys, time, numpy as np, torch
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT))

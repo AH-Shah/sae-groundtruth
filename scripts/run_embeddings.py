@@ -1,8 +1,4 @@
-"""SAE vs rotations on the spatial (A, B) and Geneformer (P) embeddings: reproducibility, concept specificity, gene programs, kNN.
-
-Adapted from the research script antig/N2/tools/53b_dsae_slide_flags.py (the script that produced the paper's results). Differences:
-inputs are read from the deposited files (data/inputs/section_{A,B}.npz, pelka_geneformer.npz) instead of the raw h5ad / latent files;
-arms not in the paper (LaPrune, LibDense, Novae) and the unused spatial-axis / Moran metrics are removed. Everything else is unchanged.
+"""SAE vs rotations on the spatial (A, B) and Geneformer (P) embeddings.
 
 usage: python scripts/run_embeddings.py A|B|P METHODS [INPUTS]
   METHODS: comma list of tsae_cons, tsae, msae_cons, msae, pca, varimax, ica, varimax_topk, tsae_res<pct>[s|only]
@@ -34,8 +30,9 @@ FILES = {"A": "section_A.npz", "B": "section_B.npz", "P": "pelka_geneformer.npz"
 
 def load(key):
     """counts (cells x genes, CSR), genes, cell-type labels ('' = unlabelled or confidence < .7), raw embeddings {name: array}."""
-    z = np.load(DATA / "inputs" / FILES[key], allow_pickle=True)
-    C = sp.csr_matrix((z["data"], z["indices"], z["indptr"]), shape=tuple(z["shape"])).astype(np.float32)
+    z = np.load(DATA / "inputs" / FILES[key], allow_pickle=True); cf = DATA / "built" / f"counts_{key}.npz"
+    if not cf.exists(): raise SystemExit(f"{cf} missing: run scripts/build_inputs.py {key} <source> first (counts stay at their public source)")
+    c = np.load(cf); C = sp.csr_matrix((c["data"], c["indices"], c["indptr"]), shape=tuple(c["shape"])).astype(np.float32)
     emb = {k[4:]: z[k].astype(np.float32) for k in z.files if k.startswith("emb_")}
     return C, z["genes"].astype(str), z["celltype"].astype(str), emb
 
@@ -43,7 +40,7 @@ def load(key):
 def main(key, methods, only=None, tag=""):
     tag = tag + (f"_seed{SEED}" if SEED else "")
     import torch
-    torch.set_num_threads(8); mk = json.load(open(DATA / "inputs/markers.json"))["cosmx2000"]; hm = mt.hallmark(DATA / "inputs/hallmark.json")
+    torch.set_num_threads(8); mk = json.load(open(DATA / "inputs/markers.json"))["cosmx2000"]; hm = mt.hallmark(DATA / "built/hallmark.json")
     C, genes, lab, emb = load(key); rows = np.arange(C.shape[0])
     lib = np.asarray(C.sum(1)).ravel(); L = C.multiply(1e4 / np.maximum(lib, 1)[:, None]).tocsr(); L.data = np.log1p(L.data); L = L.toarray().astype(np.float32)
     lin = np.array([mt.LMAP.get(x, "OTH") for x in lab]); half = np.random.default_rng(1 + 100 * SEED).permutation(len(rows)) < len(rows) // 2

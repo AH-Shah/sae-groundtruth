@@ -1,12 +1,12 @@
-"""[Ported from antig/N2/tools/84_llm_embed.py by tools/97_port_scripts.py: output path (paper: LLM_N=1000000 LLM_SPLIT=train-00000-of-00002 LLM_OUT=LLM_pythia70m_L3_1M.npz; preliminary: defaults)]
-row 333 LLM leg: Pythia-70m residual stream (layer 3, d 512) on WikiText-103 validation; rule-based token classes as 'concepts'.
--> N2/trials/dsae/LLM_pythia70m_L3.npz (latent, cls, tok). CPU."""
+"""Pythia-70m layer-3 residual stream on WikiText-103 with rule-based token classes.
+usage (paper): LLM_N=1000000 LLM_SPLIT=train-00000-of-00002 LLM_OUT=LLM_pythia70m_L3_1M.npz python scripts/embed_llm.py
+"""
 import re, sys, numpy as np, pandas as pd, torch
 from pathlib import Path
 from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import os
-N = int(os.environ.get("LLM_N", "50000")); SPLIT = os.environ.get("LLM_SPLIT", "validation-00000-of-00001")  # default-off (row 338): 1M train tokens
+N = int(os.environ.get("LLM_N", "50000")); SPLIT = os.environ.get("LLM_SPLIT", "validation-00000-of-00001")  # default-off: 1M train tokens
 ROOT = Path(__file__).resolve().parents[1]; OUT = str(Path(os.environ.get("SAEGT_DATA", ROOT / "data")) / "inputs" / os.environ.get("LLM_OUT", "LLM_pythia70m_L3.npz")); CTX, SKIP, LAYER = 128, 8, 3
 FUNC = set("the of and to a in is was for on that with as by at from it an his her their its be are were or which this but not had have has he she they we".split())
 

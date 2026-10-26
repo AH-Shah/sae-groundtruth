@@ -1,6 +1,5 @@
-"""[Ported from antig/N2/tools/89_embed_geometry.py: functions verbatim; inputs read from the deposited files.]
-Training-free embedding geometry (Supplementary Table S4): participation ratio, top-1 / top-10 PC variance share, variance explained by
-concept means, max single-dimension variance share. Prep as the SAE runs (centred, unit rows). Novae (excluded) is not deposited."""
+"""Embedding geometry (Supplementary Table S4).
+"""
 import os, sys
 from pathlib import Path
 import numpy as np

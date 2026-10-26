@@ -1,4 +1,4 @@
-"""Dense-input SAE (CALCULUS §65): Matryoshka BatchTopK SAE on a frozen cell embedding (SAFFRON recipe) + controls + metrics.
+"""Dense-input SAE: Matryoshka BatchTopK SAE on a frozen cell embedding (SAFFRON recipe) + controls + metrics.
 
 Codes from every method are (n x F) matrices scored by the same functions: activation-matching reliability, lineage selectivity,
 gene programs (OLS top-50, Hallmark, XMARK chimera), identity kNN, spatial-axis Spearman / OMP.
@@ -82,10 +82,10 @@ def fit(X, cfg):
                         if p_ is m.D and st: st["exp_avg"][di] = 0; st["exp_avg_sq"][di] = 0
                         if p_ is m.W and st: st["exp_avg"][:, di] = 0; st["exp_avg_sq"][:, di] = 0
         if t % 500 == 0 or t == T - 1: hist.append(dict(step=t, loss=float(loss), dead=int(dead.sum())))
-    with torch.no_grad():  # §64c: global cut so mean train L0 = k
-        if len(Xt) * M <= 2 ** 28:  # exact cut on all rows (every run before row 340)
+    with torch.no_grad():
+        if len(Xt) * M <= 2 ** 28:  # exact cut on all rows
             A = torch.cat([m.pre(Xt[i:i + 65536]) for i in range(0, len(Xt), 65536)]); m.thr.copy_(A.flatten().topk(k * len(A)).values[-1])
-        else:  # row 340: MPS topk over >2^28 entries returned 0 silently (1M-token LLM: thr 0, L0 227 at k 128); cut from a 200k-row sample on CPU
+        else:
             ix = torch.as_tensor(np.random.default_rng(c["seed"]).choice(len(Xt), 200000, replace=False), device=Xt.device)
             A = torch.cat([m.pre(Xt[ix[i:i + 65536]]).cpu() for i in range(0, len(ix), 65536)]).numpy().ravel()
             m.thr.copy_(torch.tensor(float(np.partition(A, -k * 200000)[-k * 200000])))
@@ -121,7 +121,7 @@ def split_signed(Z): return np.hstack([np.maximum(Z, 0), np.maximum(-Z, 0)]).ast
 
 
 def topk_rows(Z, k):
-    """sparsified control (§65d): keep the k largest entries of each row of a non-negative code (e.g. split_signed varimax), zero the rest."""
+    """sparsified control: keep the k largest entries of each row of a non-negative code (e.g. split_signed varimax), zero the rest."""
     k = int(max(1, min(k, Z.shape[1]))); Z = np.asarray(Z, np.float32); idx = np.argpartition(-Z, k - 1, axis=1)[:, :k]
     out = np.zeros_like(Z); r = np.arange(len(Z))[:, None]; out[r, idx] = Z[r, idx]; return out
 
@@ -185,7 +185,7 @@ def morans_i(Z, pos, slide, k=10, n_max=20000, seed=0):
 
 
 def axis_scores(Z, tau, cv=5, seed=0):
-    """SAFFRON §3.2: max |Spearman(tau, z_m)| over features on cells where z_m != 0 (>= 200 cells); 5-fold OMP R2 with 2 features."""
+    """SAFFRON .2: max |Spearman(tau, z_m)| over features on cells where z_m != 0 (>= 200 cells); 5-fold OMP R2 with 2 features."""
     from scipy.stats import spearmanr
     from sklearn.linear_model import OrthogonalMatchingPursuit
     from sklearn.model_selection import cross_val_score
@@ -199,7 +199,7 @@ def axis_scores(Z, tau, cv=5, seed=0):
 
 
 def consensus(Xfit, X, cfg, seeds=(0, 1, 2, 3, 4), r_thr=.7, min_votes=3):
-    """consensus SAE (cNMF analogue, §65b): fit one model per seed, encode X; a seed-0 feature is kept if it is matched (Hungarian on
+    """consensus SAE (cNMF analogue, ): fit one model per seed, encode X; a seed-0 feature is kept if it is matched (Hungarian on
     activation correlation, r >= r_thr) in >= min_votes - 1 other seeds; its consensus activation is the mean of the matched activations."""
     Zs = []
     for s in seeds:
@@ -231,7 +231,7 @@ def check(seed=3):
 
 
 def check_consensus(seed=3):
-    """DS2 (§65b): planted 8 coarse + 24 fine; consensus over 5 seeds on each cell half reproduces between halves more than single fits
+    """DS2: planted 8 coarse + 24 fine; consensus over 5 seeds on each cell half reproduces between halves more than single fits
     and recovers the planted features. Pass: consensus half match >= .85 and > single, planted recovery >= .9."""
     rng = np.random.default_rng(seed); d, n = 32, 40000
     Dc = rng.standard_normal((8, d)); Dc /= np.linalg.norm(Dc, axis=1, keepdims=True); Df = rng.standard_normal((24, d)); Df /= np.linalg.norm(Df, axis=1, keepdims=True)

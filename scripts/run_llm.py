@@ -1,8 +1,6 @@
-"""[Ported from antig/N2/tools/91_llm_run_big.py by tools/97_port_scripts.py: paths and env names (SAEGT_SEED, SAEGT_ARMS, SAEGT_L0_FROM)]
-row 338: LLM leg with standard SAE data scale. Fit on 1M Pythia-70m L3 tokens (WikiText-103 train), dictionary M = 4d = 2048 (satisfies
-n/50), k = M/16; evaluate every metric on a held-out 100k-token sample (codes of all 1M rows would not fit in memory for the consensus).
-R1: fits on two random halves of the fitting tokens, matched on the eval sample. Rotations fit on a 200k subsample of the fitting rows.
-Env: LLM_ARMS, LLM_L0_FROM (consensus arm whose L0 sets varimax_topk), DSAE_SEED. -> trials/dsae/T2_LLMbig_<arms>[_seedN].csv"""
+"""SAEs vs rotations on the Pythia-70m embedding (fit on 900k tokens, metrics on 100k held-out tokens).
+env: SAEGT_SEED, SAEGT_ARMS, SAEGT_L0_FROM
+"""
 import os, sys, time, numpy as np, pandas as pd, torch
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT))

@@ -1,5 +1,4 @@
-"""Planted synthetic data: SAEs vs rotations on an Expr50 embedding with known programs (recovery by state strength, programs matched,
-reproducibility). Adapted from antig/N2/tools/55b_dsae_synth_lp.py (run_rot); LaPrune arms removed, output path configurable.
+"""SAEs vs rotations on planted synthetic data.
 
 usage: python scripts/run_synth.py
   env: SAEGT_SEED (0, 1, 2; also the simulation seed), SAEGT_ARMS (default = the paper's main arms), SAEGT_SETTINGS ("20000:150,20000:500,60000:150"),
