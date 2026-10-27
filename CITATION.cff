@@ -4,16 +4,16 @@ title: "Ground-truth evaluation of sparse autoencoder features on spatial, singl
 authors:
   - family-names: Shahsavand
     given-names: Amirhossein
-    affiliation: "School of Medicine, Tehran University of Medical Sciences"
+    affiliation: "Hematologic Malignancies Research Center, Research Institute for Oncology, Hematology and Cell Therapy, Tehran University of Medical Sciences, Tehran, Iran"
   - family-names: Forghani
     given-names: Shayan
-    affiliation: "School of Medicine, Tehran University of Medical Sciences"
+    affiliation: "Hematologic Malignancies Research Center, Research Institute for Oncology, Hematology and Cell Therapy, Tehran University of Medical Sciences, Tehran, Iran"
   - family-names: Akbarzadeh
     given-names: Saba
-    affiliation: "School of Medicine, Tehran University of Medical Sciences"
+    affiliation: "Hematologic Malignancies Research Center, Research Institute for Oncology, Hematology and Cell Therapy, Tehran University of Medical Sciences, Tehran, Iran"
   - family-names: Mahdavi Sabet
     given-names: Fatemeh
-    affiliation: "School of Medicine, Tehran University of Medical Sciences"
+    affiliation: "Hematologic Malignancies Research Center, Research Institute for Oncology, Hematology and Cell Therapy, Tehran University of Medical Sciences, Tehran, Iran"
 version: 1.1.0
 doi: 10.5281/zenodo.23671822
 date-released: 2026-10-27
