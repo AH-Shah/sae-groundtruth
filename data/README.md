@@ -2,6 +2,7 @@
 
 Our Zenodo deposit (10.5281/zenodo.23672147) goes into `data/inputs/` and `data/results/`: embeddings, cell IDs and cell types of the analyzed cells,
 language-model activations, reference markers, count checksums and all run results.
+Version 1.1.0 of the deposit adds `results__results_v1.1.0_symmetric_consensus.zip` (Zenodo allows 100 files per record): unzip it into `data/results/` for the paper's tables (`CONS_RULE=cl`).
 
 Count data and gene sets are rebuilt from their sources into `data/built/` with `scripts/build_inputs.py`; the 1M-token language-model file is rebuilt into `data/inputs/`:
 
