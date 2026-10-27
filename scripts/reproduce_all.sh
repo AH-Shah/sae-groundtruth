@@ -1,6 +1,6 @@
 #!/bin/sh
 # All experiments in the paper (~25 GPU hours on an Apple M-series GPU. Outputs go to results/runs with the research file names; then build tables and figures with
-#   SAEGT_RESULTS=results/runs python scripts/make_tables.py && python scripts/make_figures.py
+#   SAEGT_RESULTS=results/runs CONS_RULE=cl python scripts/make_tables.py && CONS_RULE=cl python scripts/make_figures.py
 # SAE fits on GPU are not bitwise deterministic: reruns reproduce the paper's numbers within the reported seed spread
 # (rotations and everything on CPU reproduce exactly; see tests/test_equivalence.py).
 set -e; cd "$(dirname "$0")/.."; PY=${PY:-python}
@@ -18,6 +18,12 @@ for s in 0 1 2; do
   # planted synthetic data (Fig. 3): Matryoshka + rotations, then plain BatchTopK + sparse varimax
   SAEGT_ARMS=SAEcons_Expr50,SAE_Expr50,PCA50,varimax50,varimax50_topk $PY scripts/run_synth.py
   SAEGT_ARMS=TSAEcons_Expr50,TSAE_Expr50,varimax50_topk SAEGT_TAG=_T $PY scripts/run_synth.py
+  # symmetric consensus (paper's main consensus) + sparse varimax at its L0
+  $PY scripts/run_embeddings.py A tsae_cl,varimax_topk Expr50,CellCharter
+  $PY scripts/run_embeddings.py B tsae_cl,varimax_topk Expr50,CellCharter,CADAST
+  SAEGT_M=256 $PY scripts/run_embeddings.py P tsae_cl,varimax_topk
+  SAEGT_ARMS=TCLcons_Expr50,varimax50_topk SAEGT_TAG=_CL $PY scripts/run_synth.py
+  SAEGT_ARMS=tsae_cl,varimax_topk SAEGT_L0_FROM=tsae_cl $PY scripts/run_llm.py
   # language model, 1M tokens
   SAEGT_ARMS=tsae_cons,tsae,pca,varimax,ica,varimax_topk SAEGT_L0_FROM=tsae_cons $PY scripts/run_llm.py
   # two-stage residual model on planted data (Table S3)

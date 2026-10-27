@@ -40,6 +40,9 @@ def level1(s_old, r_old, ev, y_old, t, b):
         check(f"sae.fit + encode (matryoshka={mat})", same(s_old.encode(mo, X), s_new.encode(mn, X)) and same(ho, hn))
     cfg = dict(M=48, k=4, steps=40, device="cpu", matryoshka=False)
     check("sae.consensus", same(s_old.consensus(X[:2000], X, cfg), s_new.consensus(X[:2000], X, cfg)))
+    from rebuild.sae import consensus_cl as c_old
+    torch.manual_seed(0); Zo = s_old.fits_codes(X[:2000], X, cfg, seeds=(0, 1, 2, 3, 4)); torch.manual_seed(0); Zn = s_new.fits_codes(X[:2000], X, cfg, seeds=(0, 1, 2, 3, 4))
+    check("sae.fits_codes / consensus_codes_anchor / consensus_codes_cl", same(Zo, Zn) and same(s_old.consensus_codes_anchor(Zo), s_new.consensus_codes_anchor(Zn)) and same(c_old.consensus_codes_cl(Zo), s_new.consensus_codes_cl(Zn)))
     for kind in ("pca", "varimax", "ica"):
         check(f"sae.control_codes({kind}) + split_signed", same(s_old.split_signed(s_old.control_codes(kind, X, 0, seed=1, Xfit=X[:2000])), s_new.split_signed(s_new.control_codes(kind, X, 0, seed=1, Xfit=X[:2000]))))
     Z = np.maximum(X @ g.normal(size=(24, 40)).astype(np.float32), 0); Z2 = np.maximum(X @ g.normal(size=(24, 40)).astype(np.float32), 0)
@@ -96,9 +99,10 @@ def level3():
 
 
 def level4():
-    subprocess.run([sys.executable, str(ROOT / "scripts/make_tables.py")], check=True, capture_output=True)
-    new = (ROOT / "results/TABLES_v3.md").read_text(); old = (ROOT / "data/results/TABLES_v3.md").read_text()
-    check("make_tables.py regenerates the paper tables byte for byte", new == old, f"({len(new.splitlines())} lines)")
+    for rule, sfx in (("anchor", ""), ("cl", "cl")):
+        subprocess.run([sys.executable, str(ROOT / "scripts/make_tables.py")], env={**os.environ, "CONS_RULE": rule}, check=True, capture_output=True)
+        new = (ROOT / f"results/TABLES_v3{sfx}.md").read_text(); old = (ROOT / f"data/results/TABLES_v3{sfx}.md").read_text()
+        check(f"make_tables.py (CONS_RULE={rule}) regenerates TABLES_v3{sfx}.md byte for byte", new == old, f"({len(new.splitlines())} lines)")
 
 
 if __name__ == "__main__":

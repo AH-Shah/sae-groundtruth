@@ -1,7 +1,7 @@
 """SAE vs rotations on the spatial (A, B) and Geneformer (P) embeddings.
 
 usage: python scripts/run_embeddings.py A|B|P METHODS [INPUTS]
-  METHODS: comma list of tsae_cons, tsae, msae_cons, msae, pca, varimax, ica, varimax_topk, tsae_res<pct>[s|only]
+  METHODS: comma list of tsae_cl, tsae_cons, tsae, msae_cons, msae, pca, varimax, ica, varimax_topk, tsae_res<pct>[s|only]
            (varimax_topk needs a consensus arm earlier in the same list: it is cut to that consensus's mean L0)
   env: SAEGT_SEED (0, 1, 2), SAEGT_M (dictionary size override, e.g. 256 for P), SAEGT_STEPS (3000), SAEGT_DATA (data), SAEGT_OUT (results/runs)
 paper settings: A/B: tsae_cons,tsae,varimax_topk and msae_cons,msae,pca,varimax,ica; P: the same with SAEGT_M=256 for the SAE arms.
@@ -65,16 +65,18 @@ def main(key, methods, only=None, tag=""):
                     tg = method[8:]; frac = int("".join(ch for ch in tg if ch.isdigit())) / 100
                     Zc, Z2, inf = residual.two_stage(Xf, E, {**base, "matryoshka": False}, frac=frac, stage2="single" if tg.endswith("s") else "cons", seeds=tuple(range(10 * s, 10 * s + 5)))
                     return (Z2 if tg.endswith("only") else Zc), inf
-                if method == "tsae_cons":  # consensus of plain BatchTopK fits (main SAE of the paper)
+                if method == "tsae_cl":  # symmetric consensus of plain BatchTopK fits (main SAE of the paper)
+                    return dense.consensus_codes_cl(dense.fits_codes(Xf, E, {**base, "matryoshka": False}, seeds=tuple(range(10 * s, 10 * s + 5))))
+                if method == "tsae_cons":  # anchored consensus of plain BatchTopK fits
                     return dense.consensus(Xf, E, {**base, "matryoshka": False}, seeds=tuple(range(10 * s, 10 * s + 5)))
                 if method == "tsae":  # single plain BatchTopK fit
                     m, h = dense.fit(Xf, {**base, "seed": s, "matryoshka": False}); return dense.encode(m, E), dict(r2=dense.recon_r2(m, E), dead_train=h[-1]["dead"])
                 if method == "varimax_topk":  # varimax codes sparsified to the consensus SAE's mean L0 in this run
-                    if name not in run_l0: raise SystemExit("varimax_topk needs a consensus arm (tsae_cons or msae_cons) earlier in METHODS")
+                    if name not in run_l0: raise SystemExit("varimax_topk needs a consensus arm (tsae_cl, tsae_cons or msae_cons) earlier in METHODS")
                     return dense.topk_rows(dense.split_signed(dense.control_codes("varimax", E, 0, seed=s, Xfit=Xf)), run_l0[name]), {}
                 return dense.split_signed(dense.control_codes(method, E, 0, seed=s, Xfit=Xf)), {}
             Z, info = fit(E, 0); al = dense.alive(Z); Za = Z[:, al]
-            if method in ("tsae_cons", "msae_cons"): run_l0[name] = int(round(float((Z != 0).sum(1).mean())))
+            if method in ("tsae_cons", "msae_cons", "tsae_cl"): run_l0[name] = int(round(float((Z != 0).sum(1).mean())))
             ok = lin != "OTH"; pmax, plin = dense.lineage_selectivity(Za[ok], lin[ok], mt.LINS); tops, _ = dense.gene_programs(Za, L, genes)
             hq = np.array([mt.enrich(t, genes, hm)[1] for t in tops]); chim = np.array([mt.foreign_markers(";".join(t), l) >= 3 for t, l in zip(tops, plin)])
             chim_ref = np.array([mt.ref_foreign(t, l, mk) >= 3 for t, l in zip(tops, plin)])

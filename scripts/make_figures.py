@@ -1,10 +1,11 @@
-"""Figures 1-3 from results/REAL_v3.csv and results/SYNTH_v3.csv -> figures/.
+"""Figures 1-3 from results/REAL_v3{,cl}.csv and results/SYNTH_v3{,cl}.csv -> figures/ (paper: CONS_RULE=cl).
 """
 import numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]; F = str(ROOT / "figures") + "/"; Path(F).mkdir(exist_ok=True)
-R = pd.read_csv(ROOT / "results/REAL_v3.csv"); S = pd.read_csv(ROOT / "results/SYNTH_v3.csv")
+import os; SFX = "cl" if os.environ.get("CONS_RULE", "anchor") == "cl" else ""  # CONS_RULE=cl: paper figures (symmetric consensus)
+R = pd.read_csv(ROOT / f"results/REAL_v3{SFX}.csv"); S = pd.read_csv(ROOT / f"results/SYNTH_v3{SFX}.csv")
 ARM = dict(tsae_cons=("consensus SAE", "#2a78d6", "o"), tsae=("single SAE", "#eb6834", "s"), pca=("PCA", "#1baf7a", "^"),
            varimax=("varimax", "#eda100", "D"), varimax_topk=("varimax @ SAE L0", "#e87ba4", "v"), ica=("ICA", "#008300", "P"))
 INK, MUTED = "#0b0b0b", "#52514e"
@@ -36,7 +37,7 @@ def fig1():
             a.errorbar(x[("R1_rep", "mean")], x[("n_cov", "mean")], xerr=x[("R1_rep", "std")], yerr=x[("n_cov", "std")], fmt=mk, ms=5, color=c,
                        mec="white", mew=.6, elinewidth=.8, ls="none", label=lab, zorder=3)
         a.set_xlim(-.03, 1.05); a.set_ylim(-.04 * top, 1.06 * top); a.set_title(t, fontsize=8, color=INK, loc="left"); a.set_xlabel("R1 reproducible share"); a.set_ylabel(yl)
-    legend(fig, ax[0], 6); fig.tight_layout(rect=(0, .09, 1, 1)); fig.savefig(F + "fig1_v3.pdf"); fig.savefig(F + "fig1_v3.png", dpi=200)
+    legend(fig, ax[0], 6); fig.tight_layout(rect=(0, .09, 1, 1)); fig.savefig(F + f"fig1_v3{SFX}.pdf"); fig.savefig(F + f"fig1_v3{SFX}.png", dpi=200)
 
 
 def fig2():
@@ -51,7 +52,7 @@ def fig2():
             a.errorbar(x[(col, "mean")] + (1 if log else 0), y + dy, xerr=x[(col, "std")], fmt=mk, color=c, ms=5, mec="white", mew=.6, elinewidth=.8, ls="none", label=lab)
         a.set_yticks(y); a.set_yticklabels(lab_e if j == 0 else []); a.set_title(ttl, fontsize=8, loc="left", color=INK); a.grid(axis="y", visible=False); a.set_xlabel(xl)
         if log: a.set_xscale("log"); a.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-    legend(fig, ax[0], 2); fig.tight_layout(rect=(0, .08, 1, 1)); fig.savefig(F + "fig2_v3.pdf"); fig.savefig(F + "fig2_v3.png", dpi=200)
+    legend(fig, ax[0], 2); fig.tight_layout(rect=(0, .08, 1, 1)); fig.savefig(F + f"fig2_v3{SFX}.pdf"); fig.savefig(F + f"fig2_v3{SFX}.png", dpi=200)
 
 
 def fig3():
@@ -64,7 +65,7 @@ def fig3():
             a.errorbar(x + (i - 2) * .04, mu, yerr=sd, marker=mk, color=c, ms=4, mec="white", mew=.5, elinewidth=.8, lw=1.5, label=lab)
         a.set_xticks(x); a.set_xticklabels(["strong", "mid", "weak"]); a.set_title(f"{e[1:3]}k cells, depth {e.split('_d')[1]}", fontsize=8, loc="left", color=INK)
         a.set_ylabel("states recovered"); a.yaxis.set_tick_params(labelleft=True); a.set_xlabel("planted state strength")
-    ax[0].set_ylim(-.05, 1.05); legend(fig, ax[0], 5); fig.tight_layout(rect=(0, .1, 1, 1)); fig.savefig(F + "fig3_v3.pdf"); fig.savefig(F + "fig3_v3.png", dpi=200)
+    ax[0].set_ylim(-.05, 1.05); legend(fig, ax[0], 5); fig.tight_layout(rect=(0, .1, 1, 1)); fig.savefig(F + f"fig3_v3{SFX}.pdf"); fig.savefig(F + f"fig3_v3{SFX}.png", dpi=200)
 
 
 fig1(); fig2(); fig3(); print("figs v3 ok")

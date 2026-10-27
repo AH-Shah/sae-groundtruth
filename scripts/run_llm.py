@@ -23,6 +23,7 @@ rot_sub = lambda Xf: Xf[np.random.default_rng(7).choice(len(Xf), min(len(Xf), 20
 
 def fit(method, Xf, s):
     s = s + 3 * SEED; cfg = dict(M=M, k=k, steps=3000, device=dev)
+    if method == "tsae_cl": return dense.consensus_codes_cl(dense.fits_codes(Xf, EV, {**cfg, "matryoshka": False}, seeds=tuple(range(10 * s, 10 * s + 5))))[0]
     if method == "tsae_cons": return dense.consensus(Xf, EV, {**cfg, "matryoshka": False}, seeds=tuple(range(10 * s, 10 * s + 5)))[0]
     if method == "msae_cons": return dense.consensus(Xf, EV, cfg, seeds=tuple(range(10 * s, 10 * s + 5)))[0]
     if method == "tsae": return dense.encode(dense.fit(Xf, {**cfg, "seed": s, "matryoshka": False})[0], EV)

@@ -29,16 +29,18 @@ See `data/README.md` for details. `data/genes_2000.tsv` lists the gene panel.
 Tables and figures from the deposited results:
 
 ```
-python scripts/make_tables.py
-python scripts/make_figures.py
+CONS_RULE=cl python scripts/make_tables.py    # paper: symmetric consensus (TABLES_v3cl.md)
+CONS_RULE=cl python scripts/make_figures.py
 ```
+
+Without `CONS_RULE=cl` both scripts use the anchored consensus of version 1.0.0.
 
 All experiments (about 25 GPU hours): `sh scripts/reproduce_all.sh`.
 
 Single run, for example:
 
 ```
-SAEGT_SEED=1 python scripts/run_embeddings.py B tsae_cons,tsae,varimax_topk Expr50,CellCharter,CADAST
+SAEGT_SEED=1 python scripts/run_embeddings.py B tsae_cl,varimax_topk Expr50,CellCharter,CADAST
 ```
 
 `tests/test_equivalence.py` checks the code and data against the original analysis.

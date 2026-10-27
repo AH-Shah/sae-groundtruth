@@ -8,9 +8,21 @@ OLD = "msae_cons+msae+pca+varimax+ica+varimax_topk"; SEEDS = [(0, ""), (1, "_see
 KEEP = {"A": ["Expr50", "CellCharter"], "B": ["Expr50", "CellCharter", "CADAST"], "P": ["Geneformer"]}
 HI = dict(n_cov=1, R1_rep=1, R1_n=1, mono=1, n_mono=1, hallmark=1, knn=1, chimeric_ref=-1, rec_state_hi=1, rec_state_mid=1, rec_state_lo=1, id_dup=-1)
 MAIN = ["tsae_cons", "tsae", "varimax", "varimax_topk", "ica", "pca", "msae_cons", "msae"]
+# CONS_RULE=cl (paper): the symmetric consensus (tsae_cl runs) is the main consensus "tsae_cons" with its own L0-matched varimax_topk;
+# the anchored arms are kept as tsae_anchor / varimax_topk_anchor. Outputs get the suffix "cl". Default: anchored tables (TABLES_v3.md).
+CL = os.environ.get("CONS_RULE", "anchor") == "cl"; SFX = "cl" if CL else ""
+if CL: MAIN = MAIN[:4] + ["tsae_anchor"] + MAIN[4:]
+CLF = {"A": "T2_A_unit_batch_rs0_tsae_cl+varimax_topk_Expr50+CellCharter", "B": "T2_B_unit_batch_rs0_tsae_cl+varimax_topk_Expr50+CellCharter+CADAST", "P": "T2_P_unit_batch_rs0_tsae_cl+varimax_topk_M256"}
 
 
-def rd(f, s): d = pd.read_csv(f); d["seed"] = s; return d
+def rd(f, s): d = pd.read_csv(f); d["seed"] = s; return ren(d, f)
+
+
+def ren(d, f):
+    """CONS_RULE=cl: tsae_cl -> tsae_cons; arms of the anchored runs -> *_anchor (their varimax_topk is matched to the anchored L0)."""
+    if not CL: return d
+    if "tsae_cl" in Path(f).name or "SYNTH_ROT_CL" in Path(f).name: return d.assign(method=d.method.replace({"tsae_cl": "tsae_cons", "TCLcons_Expr50": "TSAEcons_Expr50"}))
+    return d.assign(method=d.method.replace({"tsae_cons": "tsae_anchor", "varimax_topk": "varimax_topk_anchor", "TSAEcons_Expr50": "tsae_anchor", "varimax50_topk": "varimax_topk_anchor"}))
 
 
 def real():
@@ -19,11 +31,12 @@ def real():
         out += [rd(D / f"T2_A_unit_batch_rs0_tsae_cons+tsae+varimax_topk_Expr50+CellCharter{t}.csv", s), rd(D / f"T2_B_unit_batch_rs0_tsae_cons+tsae+varimax_topk_Expr50+CellCharter+CADAST{t}.csv", s),
                 rd(D / f"T2_P_unit_batch_rs0_tsae_cons+tsae+varimax_topk_M256{t}.csv", s), rd(D / f"T2_P_unit_batch_rs0_msae_cons+msae_M256{t}.csv", s)]
         for k in "ABP":
+            if CL: out.append(rd(D / f"{CLF[k]}{t}.csv", s))
             o = rd(D / f"T2_{k}_unit_batch_rs0_{OLD}{t}.csv", s); keep = ["pca", "varimax", "ica"] + (["msae_cons", "msae"] if k != "P" else []); out.append(o[o.method.isin(keep)])
     d = pd.concat(out); d = d[d.apply(lambda r: r.input in KEEP[r.slide], axis=1)]
-    big = sorted(x for x in D.glob("T2_LLMbig_*.csv") if "thr0bug" not in x.name); llm = big or sorted(D.glob("T2_LLM_*.csv"))
+    big = sorted(x for x in D.glob("T2_LLMbig_*.csv") if "thr0bug" not in x.name and (CL or "tsae_cl" not in x.name)); llm = big or sorted(D.glob("T2_LLM_*.csv"))
     for f in llm:
-        g = pd.read_csv(f); g["slide"] = "L"; g = g[g.method != "lpsae"]
+        g = ren(pd.read_csv(f), f); g["slide"] = "L"; g = g[g.method != "lpsae"]
         if not big: g = g[g.method != "varimax_topk"] if "tsae_cons" not in set(g.method) else g
         d = pd.concat([d, g])
     d = d.drop_duplicates(["slide", "input", "method", "seed"], keep="last"); d["R1_n"] = d.R1_rep * d.alive; d["emb"] = d.slide + ":" + d.input
@@ -38,9 +51,10 @@ def coverage():
     for s, t in SEEDS:
         files = [(D / f"T2_A_unit_batch_rs0_tsae_cons+tsae+varimax_topk_Expr50+CellCharter{t}_features.csv", None), (D / f"T2_B_unit_batch_rs0_tsae_cons+tsae+varimax_topk_Expr50+CellCharter+CADAST{t}_features.csv", None),
                  (D / f"T2_P_unit_batch_rs0_tsae_cons+tsae+varimax_topk_M256{t}_features.csv", None), (D / f"T2_P_unit_batch_rs0_msae_cons+msae_M256{t}_features.csv", None)]
+        if CL: files += [(D / f"{CLF[k]}{t}_features.csv", None) for k in "ABP"]
         files += [(D / f"T2_{k}_unit_batch_rs0_{OLD}{t}_features.csv", ["pca", "varimax", "ica"] + (["msae_cons", "msae"] if k != "P" else [])) for k in "ABP"]
         for fp, keep in files:
-            d = pd.read_csv(fp)
+            d = ren(pd.read_csv(fp), fp)
             if keep: d = d[d.method.isin(keep)]
             for (sl, i, m), g in d.groupby(["slide", "input", "method"]):
                 cv.setdefault((sl, i, m, s), g.loc[g.pmax >= .7, "lineage"].nunique())
@@ -50,9 +64,10 @@ def coverage():
 def synth():
     out = []
     for s, t in SEEDS:
+        if CL: out.append(rd(D / f"SYNTH_ROT_CL{t}.csv", s))
         out.append(rd(D / f"SYNTH_ROT_T{t}.csv", s)); o = rd(D / f"SYNTH_ROT{t}.csv", s); out.append(o[o.method.isin(["PCA50", "varimax50", "SAEcons_Expr50", "SAE_Expr50"])])
     d = pd.concat(out); d["n_mono"] = d.get("n_mono", (d.mono * d.n_feat).round()).fillna((d.mono * d.n_feat).round())
-    d["method"] = d.method.map(dict(TSAEcons_Expr50="tsae_cons", TSAE_Expr50="tsae", varimax50_topk="varimax_topk", PCA50="pca", varimax50="varimax", SAEcons_Expr50="msae_cons", SAE_Expr50="msae"))
+    d["method"] = d.method.map(dict(TSAEcons_Expr50="tsae_cons", TSAE_Expr50="tsae", varimax50_topk="varimax_topk", PCA50="pca", varimax50="varimax", SAEcons_Expr50="msae_cons", SAE_Expr50="msae", tsae_anchor="tsae_anchor", varimax_topk_anchor="varimax_topk_anchor"))
     d["emb"] = "n" + (d.n // 1000).astype(str) + "k_d" + d.depth.astype(str); d["R1_n"] = d.R1_rep * d.n_feat
     d["n_cov"] = (d.rec_identity * 6 + (d.rec_state_hi + d.rec_state_mid + d.rec_state_lo) * 6 + d.rec_shared * 4).round()  # distinct programs matched (of 28)
     return d
@@ -80,13 +95,13 @@ def fmt(t, e, a, p):
 
 
 def main():
-    R, big = real(); S = synth(); R.to_csv(O / "REAL_v3.csv", index=False); S.to_csv(O / "SYNTH_v3.csv", index=False)
+    R, big = real(); S = synth(); R.to_csv(O / f"REAL_v3{SFX}.csv", index=False); S.to_csv(O / f"SYNTH_v3{SFX}.csv", index=False)
     src = dict(slides=R[R.slide.isin(["A", "B"])], synth=S, geneformer=R[R.slide == "P"], llm=R[R.slide == "L"])
     mets = ["n_cov", "n_mono", "mono", "chimeric_ref", "hallmark", "knn", "R1_rep", "R1_n", "rec_state_hi", "rec_state_mid", "rec_state_lo", "id_dup"]
     L = [f"# SAE paper tables v3 (main SAE = plain BatchTopK; LLM leg = {'1M tokens' if big else '50k tokens'})", "",
          "## consensus (tsae_cons) vs each method: W/T/L beyond seed sd (median diff)", "| source | vs | " + " | ".join(mets) + " |", "|---|---|" + "---|" * len(mets)]
     for k, d in src.items():
-        for b in ["tsae", "varimax", "varimax_topk", "ica", "pca", "msae_cons", "msae"]:
+        for b in (["tsae_anchor"] if CL else []) + ["tsae", "varimax", "varimax_topk", "ica", "pca", "msae_cons", "msae"]:
             L.append(f"| {k} | {b} | " + " | ".join(cmp(d, "tsae_cons", b, m) or "-" for m in mets) + " |")
     L += ["", "## per embedding (mean±sd)", "| emb | metric | " + " | ".join(MAIN) + " |", "|---|---|" + "---|" * len(MAIN)]
     for m in ["n_cov", "R1_rep", "R1_n", "alive", "L0", "n_mono", "mono", "chimeric_ref", "hallmark", "knn", "sec"]:
@@ -94,9 +109,9 @@ def main():
         for e in R.emb.unique(): L.append(f"| {e} | {m} | " + " | ".join(fmt(t, e, a, 0 if m in ("R1_n", "alive", "n_mono", "sec") else 2) for a in MAIN) + " |")
     L += ["", "## synthetic (mean±sd)", "| setting | arm | mono | n_mono | R1 | rec hi | rec mid | rec lo | id_dup | n_feat |", "|---|---|---|---|---|---|---|---|---|---|"]
     for e in S.emb.unique():
-        for a in ["tsae_cons", "tsae", "pca", "varimax", "varimax_topk", "msae_cons", "msae"]:
+        for a in ["tsae_cons"] + (["tsae_anchor"] if CL else []) + ["tsae", "pca", "varimax", "varimax_topk", "msae_cons", "msae"]:
             L.append(f"| {e} | {a} | " + " | ".join(fmt(ms(S, m), e, a, 0 if m in ("n_mono", "n_feat") else 2) for m in ["mono", "n_mono", "R1_rep", "rec_state_hi", "rec_state_mid", "rec_state_lo", "id_dup", "n_feat"]) + " |")
-    (O / "TABLES_v3.md").write_text("\n".join(L) + "\n"); print("wrote TABLES_v3.md", len(L))
+    (O / f"TABLES_v3{SFX}.md").write_text("\n".join(L) + "\n"); print("wrote TABLES_v3.md", len(L))
 
 
 if __name__ == "__main__":

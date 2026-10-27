@@ -243,3 +243,54 @@ def check_consensus(seed=3):
     m0, _ = fit(X[h], dict(cfg, seed=0)); m1, _ = fit(X[~h], dict(cfg, seed=10))
     rc, _ = act_match(Za, Zb); rs, _ = act_match(encode(m0, X), encode(m1, X)); T = np.hstack([np.eye(8)[c], Fm]).astype(np.float32); rec, _ = act_match(T, Za)
     return dict(cons=rc, single=rs, recovered=rec, ok=bool(rc >= .85 and rc > rs and rec >= .9))
+
+
+def fits_codes(Xfit, X, cfg, seeds=(0, 1, 2, 3, 4)):
+    """the S fits of a consensus, encoded on X (shared by the aggregation rules)."""
+    out = []
+    for s in seeds:
+        m, _ = fit(Xfit, {**cfg, "seed": s}); out.append(encode(m, X))
+    return out
+
+
+def consensus_codes_anchor(Zs, r_thr=.7, min_votes=3, n_rows=30000):
+    """the anchored rule applied to precomputed codes (identical to consensus() after its fitting loop)."""
+    ref = Zs[0]; ia = np.flatnonzero(alive(ref)); acc = ref[:, ia].astype(np.float32).copy(); votes = np.ones(len(ia))
+    rows = np.random.default_rng(0).choice(len(ref), min(len(ref), n_rows), replace=False)
+    A = ref[rows][:, ia].astype(np.float64); A = (A - A.mean(0)) / np.maximum(A.std(0), 1e-12)
+    for Z in Zs[1:]:
+        ib = np.flatnonzero(alive(Z)); B = Z[rows][:, ib].astype(np.float64); B = (B - B.mean(0)) / np.maximum(B.std(0), 1e-12)
+        C = A.T @ B / len(rows); r, c = linear_sum_assignment(-C); ok = C[r, c] >= r_thr
+        votes[r[ok]] += 1; acc[:, r[ok]] += Z[:, ib[c[ok]]]
+    keep = votes >= min_votes; return (acc[:, keep] / votes[keep]).astype(np.float32), dict(n_ref=len(ia), n_cons=int(keep.sum()))
+
+
+def consensus_codes_cl(Zs, r_thr=.7, min_votes=3, n_rows=30000):
+    """symmetric consensus: edges = pairwise Hungarian matches at r >= r_thr, merged in descending r; a merge is allowed if the two groups share
+    no fit and their mean cross-fit correlation is >= r_thr. Keep groups with >= min_votes fits; consensus activation = mean of the members."""
+    rows = np.random.default_rng(0).choice(len(Zs[0]), min(len(Zs[0]), n_rows), replace=False)
+    idx = [np.flatnonzero(alive(Z)) for Z in Zs]; off = np.cumsum([0] + [len(i) for i in idx]); N = int(off[-1]); S = len(Zs)
+    A = []
+    for Z, ii in zip(Zs, idx):
+        B = Z[rows][:, ii].astype(np.float64); A.append(((B - B.mean(0)) / np.maximum(B.std(0), 1e-12)).astype(np.float32))
+    C, E = {}, []
+    for i in range(S):
+        for j in range(i + 1, S):
+            if not len(idx[i]) or not len(idx[j]): continue
+            C[i, j] = A[i].T @ A[j] / len(rows); r, c = linear_sum_assignment(-C[i, j])
+            E += [(float(v), off[i] + a, off[j] + b) for a, b, v in zip(r, c, C[i, j][r, c]) if v >= r_thr]
+    fit_of = np.repeat(np.arange(S), np.diff(off)); loc = np.arange(N) - off[fit_of]
+
+    def corr(u, v):
+        fu, fv = fit_of[u], fit_of[v]
+        return C[fu, fv][loc[u], loc[v]] if fu < fv else C[fv, fu][loc[v], loc[u]]
+    grp = {a: [a] for a in range(N)}; gid = np.arange(N); n_block = 0
+    for v, a, b in sorted(E, key=lambda e: -e[0]):
+        ga, gb = gid[a], gid[b]
+        if ga == gb: continue
+        Ga, Gb = grp[ga], grp[gb]
+        if set(fit_of[Ga]) & set(fit_of[Gb]) or np.mean([corr(u, w) for u in Ga for w in Gb]) < r_thr: n_block += 1; continue
+        grp[ga] = Ga + Gb; gid[Gb] = ga; del grp[gb]
+    out = [np.mean([Zs[fit_of[u]][:, idx[fit_of[u]][loc[u]]] for u in G], 0) for G in grp.values() if len(G) >= min_votes]
+    Zc = np.stack(out, 1).astype(np.float32) if out else np.zeros((len(Zs[0]), 0), np.float32)
+    return Zc, dict(n_nodes=N, n_edges=len(E), n_block=n_block, n_cons=Zc.shape[1], max_comp=int(max(len(G) for G in grp.values()) if grp else 0))

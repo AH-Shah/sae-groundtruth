@@ -3,7 +3,7 @@
 usage: python scripts/run_synth.py
   env: SAEGT_SEED (0, 1, 2; also the simulation seed), SAEGT_ARMS (default = the paper's main arms), SAEGT_SETTINGS ("20000:150,20000:500,60000:150"),
        SAEGT_TAG (output suffix), SAEGT_OUT (results/runs)
-  arms: TSAEcons_Expr50, TSAE_Expr50, varimax50_topk (needs a consensus arm earlier), PCA50, varimax50, SAEcons_Expr50, SAE_Expr50 (Matryoshka),
+  arms: TCLcons_Expr50 (symmetric consensus), TSAEcons_Expr50, TSAE_Expr50, varimax50_topk (needs a consensus arm earlier), PCA50, varimax50, SAEcons_Expr50, SAE_Expr50 (Matryoshka),
         TRES<pct>[s|only]_Expr50 (two-stage residual model)
 """
 import os, sys, time
@@ -35,11 +35,12 @@ def run_rot():
                 Zc, Z2, _ = residual.two_stage(Xf, X, {**cfg, "matryoshka": False}, frac=frac, stage2="single" if tag.endswith("s") else "cons", seeds=tuple(range(10 * s, 10 * s + 5)))
                 return Z2 if tag.endswith("only") else Zc
             if arm == "TSAE_Expr50": return dense.encode(dense.fit(Xf, {**cfg, "seed": s, "matryoshka": False})[0], X)
+            if arm == "TCLcons_Expr50": return dense.consensus_codes_cl(dense.fits_codes(Xf, X, {**cfg, "matryoshka": False}, seeds=tuple(range(10 * s, 10 * s + 5))))[0]
             if arm == "TSAEcons_Expr50": return dense.consensus(Xf, X, {**cfg, "matryoshka": False}, seeds=tuple(range(10 * s, 10 * s + 5)))[0]
             return dense.consensus(Xf, X, cfg, seeds=tuple(range(10 * s, 10 * s + 5)))[0]  # SAEcons_Expr50 (Matryoshka consensus)
         for arm in os.environ.get("SAEGT_ARMS", "TSAEcons_Expr50,TSAE_Expr50,varimax50_topk,PCA50,varimax50").split(","):
             Z = fit(arm, X, 0)
-            if arm in ("SAEcons_Expr50", "TSAEcons_Expr50"): l0["k"] = int(round(float((Z != 0).sum(1).mean())))
+            if arm in ("SAEcons_Expr50", "TSAEcons_Expr50", "TCLcons_Expr50"): l0["k"] = int(round(float((Z != 0).sum(1).mean())))
             rep, rmed = dense.act_match(fit(arm, X[half], 1), fit(arm, X[~half], 2))
             r = score(Z, U, kind, lin_of, lin); r.update(method=arm, n=n, depth=depth, seed=SYN_SEED, n_mono=int(round(mono_share(Z, U) * dense.alive(Z).sum())), mono=mono_share(Z, U), R1_rep=rep, R1_rmed=rmed, L0=float((Z != 0).sum(1).mean()))
             rows.append(r); pd.DataFrame(rows).to_csv(OUT / f"SYNTH_ROT{os.environ.get('SAEGT_TAG', '')}{f'_seed{SYN_SEED}' if SYN_SEED else ''}.csv", index=False)
