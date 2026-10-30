@@ -20,8 +20,8 @@ authors:
   - family-names: Dah Mardeh Ei
     given-names: Ali
     affiliation: "Department of General Surgery, Shariati Hospital, Tehran University of Medical Sciences, Tehran, Iran"
-version: 1.1.0
+version: 1.2.0
 doi: 10.5281/zenodo.23671822
-date-released: 2026-10-27
+date-released: 2026-10-30
 repository-code: "https://github.com/AH-Shah/sae-groundtruth"
 license: MIT

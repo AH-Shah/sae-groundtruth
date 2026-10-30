@@ -1,4 +1,4 @@
-"""Embedding geometry (Supplementary Table S4).
+"""Embedding geometry (Supplementary Table S2).
 """
 import os, sys
 from pathlib import Path

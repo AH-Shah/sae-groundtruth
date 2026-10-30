@@ -4,10 +4,10 @@ import numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]; F = str(ROOT / "figures") + "/"; Path(F).mkdir(exist_ok=True)
-import os; SFX = "cl" if os.environ.get("CONS_RULE", "anchor") == "cl" else ""  # CONS_RULE=cl: paper figures (symmetric consensus)
+import os; SFX = "cl" if os.environ.get("CONS_RULE", "cl") == "cl" else ""  # default: paper figures (symmetric consensus); CONS_RULE=anchor: version 1.0.0
 R = pd.read_csv(ROOT / f"results/REAL_v3{SFX}.csv"); S = pd.read_csv(ROOT / f"results/SYNTH_v3{SFX}.csv")
 ARM = dict(tsae_cons=("consensus SAE", "#2a78d6", "o"), tsae=("single SAE", "#eb6834", "s"), pca=("PCA", "#1baf7a", "^"),
-           varimax=("varimax", "#eda100", "D"), varimax_topk=("varimax @ SAE L0", "#e87ba4", "v"), ica=("ICA", "#008300", "P"))
+           varimax=("varimax", "#eda100", "D"), varimax_topk=("sparse varimax", "#e87ba4", "v"), ica=("ICA", "#008300", "P"))
 INK, MUTED = "#0b0b0b", "#52514e"
 plt.rcParams.update({"font.size": 8, "axes.edgecolor": MUTED, "axes.labelcolor": INK, "xtick.color": MUTED, "ytick.color": MUTED,
                      "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True, "grid.color": "#e6e5e1", "grid.linewidth": .5, "lines.linewidth": 2})

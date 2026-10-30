@@ -1,4 +1,4 @@
-"""Dense-input SAE: Matryoshka BatchTopK SAE on a frozen cell embedding (SAFFRON recipe) + controls + metrics.
+"""Dense-input SAE: Matryoshka BatchTopK SAE on a frozen cell embedding + controls + metrics.
 
 Codes from every method are (n x F) matrices scored by the same functions: activation-matching reliability, lineage selectivity,
 gene programs (OLS top-50, Hallmark, XMARK chimera), identity kNN, spatial-axis Spearman / OMP.
@@ -38,7 +38,7 @@ class MSAE(nn.Module):
 
 
 def _init(X, M, seed):
-    """b_dec = mean; D = k-means++ seeds of centred rows (unit), as rebuild/sae/core.init_model; more latents than seeds -> random unit rows."""
+    """b_dec = mean; D = k-means++ seeds of centred rows (unit); more latents than seeds -> random unit rows."""
     from sklearn.cluster import kmeans_plusplus
     rng = np.random.default_rng(seed); sub = X[rng.choice(len(X), min(len(X), 20000), replace=False)]; b = sub.mean(0); c = sub - b
     _, idx = kmeans_plusplus(c, M, random_state=seed); D = c[idx]; D = D / np.maximum(np.linalg.norm(D, axis=1, keepdims=True), 1e-9)
@@ -72,7 +72,7 @@ def fit(X, cfg):
         with torch.no_grad():
             m.D.div_(m.D.norm(dim=1, keepdim=True).clamp_min(1e-9)); m.step += 1
             R = c["resample_every"]
-            if R and t > 0 and t % R == 0 and t < .7 * T and bool(dead.any()):  # resample dead latents onto high-residual cells (SAFFRON: every 10 epochs)
+            if R and t > 0 and t % R == 0 and t < .7 * T and bool(dead.any()):  # resample dead latents onto high-residual cells
                 e = xb - m.b_dec - z @ m.D; w = e.pow(2).sum(1); idx = torch.multinomial(w / w.sum(), int(dead.sum()), replacement=True)
                 dn = e[idx] / e[idx].norm(dim=1, keepdim=True).clamp_min(1e-9); di = torch.nonzero(dead).flatten()
                 m.D[di] = dn; m.W[:, di] = .2 * dn.T; m.b_enc[di] = 0; m.last[di] = m.step
@@ -81,7 +81,7 @@ def fit(X, cfg):
                         st = opt.state.get(p_, {})
                         if p_ is m.D and st: st["exp_avg"][di] = 0; st["exp_avg_sq"][di] = 0
                         if p_ is m.W and st: st["exp_avg"][:, di] = 0; st["exp_avg_sq"][:, di] = 0
-        if t % 500 == 0 or t == T - 1: hist.append(dict(step=t, loss=float(loss), dead=int(dead.sum())))
+        if t % 500 == 0 or t == T - 1: hist.append(dict(step=t, loss=float(loss.detach()), dead=int(dead.sum())))
     with torch.no_grad():
         if len(Xt) * M <= 2 ** 28:  # exact cut on all rows
             A = torch.cat([m.pre(Xt[i:i + 65536]) for i in range(0, len(Xt), 65536)]); m.thr.copy_(A.flatten().topk(k * len(A)).values[-1])
@@ -185,7 +185,7 @@ def morans_i(Z, pos, slide, k=10, n_max=20000, seed=0):
 
 
 def axis_scores(Z, tau, cv=5, seed=0):
-    """SAFFRON .2: max |Spearman(tau, z_m)| over features on cells where z_m != 0 (>= 200 cells); 5-fold OMP R2 with 2 features."""
+    """axis scores: max |Spearman(tau, z_m)| over features on cells where z_m != 0 (>= 200 cells); 5-fold OMP R2 with 2 features."""
     from scipy.stats import spearmanr
     from sklearn.linear_model import OrthogonalMatchingPursuit
     from sklearn.model_selection import cross_val_score
@@ -199,7 +199,7 @@ def axis_scores(Z, tau, cv=5, seed=0):
 
 
 def consensus(Xfit, X, cfg, seeds=(0, 1, 2, 3, 4), r_thr=.7, min_votes=3):
-    """consensus SAE (cNMF analogue, ): fit one model per seed, encode X; a seed-0 feature is kept if it is matched (Hungarian on
+    """anchored consensus SAE (cNMF analogue): fit one model per seed, encode X; a seed-0 feature is kept if it is matched (Hungarian on
     activation correlation, r >= r_thr) in >= min_votes - 1 other seeds; its consensus activation is the mean of the matched activations."""
     Zs = []
     for s in seeds:

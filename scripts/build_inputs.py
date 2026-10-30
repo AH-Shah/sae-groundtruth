@@ -7,7 +7,7 @@ usage:
   python scripts/build_inputs.py B S0_exprMat_file     section B: CosMx Human Whole Transcriptome Colon Dataset (Bruker Spatial Biology),
                                                        flat file S0_exprMat_file (~20 GB; read in chunks)
   python scripts/build_inputs.py P pelka.h5ad          Pelka et al. 2021 atlas (GEO GSE178341), CZ CELLxGENE h5ad with raw counts
-  python scripts/build_inputs.py hallmark              MSigDB Hallmark 2020 gene sets from Enrichr (as the research code fetched them)
+  python scripts/build_inputs.py hallmark              MSigDB Hallmark 2020 gene sets from Enrichr
 """
 import hashlib, json, os, sys, urllib.request
 from pathlib import Path

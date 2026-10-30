@@ -19,7 +19,7 @@ HUB = Path.home() / ".cache/huggingface/hub/models--ctheodoris--Geneformer/snaps
 
 
 def lineage_map():
-    return {'EpiT': 'EPI', 'Epi': 'EPI', 'Fibro': 'FIB', 'SmoothMuscle': 'MUR', 'Peri': 'PERI', 'Endo': 'END', 'Macro': 'MYE', 'DC': 'MYE', 'Mono': 'MYE', 'Granulo': 'MYE', 'Mast': 'MAST', 'Plasma': 'BPL', 'B': 'BPL', 'TCD4': 'TNK', 'TCD8': 'TNK', 'NK': 'TNK', 'ILC': 'TNK', 'TZBTB16': 'TNK', 'Tgd': 'TNK'}  # ClusterMidway -> 9 lineages (research tools/72 MAP, inlined)
+    return {'EpiT': 'EPI', 'Epi': 'EPI', 'Fibro': 'FIB', 'SmoothMuscle': 'MUR', 'Peri': 'PERI', 'Endo': 'END', 'Macro': 'MYE', 'DC': 'MYE', 'Mono': 'MYE', 'Granulo': 'MYE', 'Mast': 'MAST', 'Plasma': 'BPL', 'B': 'BPL', 'TCD4': 'TNK', 'TCD8': 'TNK', 'NK': 'TNK', 'ILC': 'TNK', 'TZBTB16': 'TNK', 'Tgd': 'TNK'}  # Pelka et al. ClusterMidway types -> 9 lineages
 
 
 def files():
@@ -75,7 +75,7 @@ def main(mode, per_lin=2500):
     t0 = time.time(); seqs = tokenize(X, ens, tokd, medd); t1 = time.time(); Z = embed(seqs, model_dir); t2 = time.time()
     print(f"cells {len(bc)} median tokens {int(np.median([len(s) for s in seqs]))} tokenize {t1 - t0:.1f}s embed {t2 - t1:.1f}s "
           f"({(t2 - t1) / len(bc):.2f} s/cell) d {Z.shape[1]} lineages {dict(zip(*np.unique(lab, return_counts=True)))}", flush=True)
-    if mode == "run": np.savez(OUT / "GF_pelka.npz", latent=Z, barcodes=bc, lineage=lab, midway=mid)  # data/inputs/pelka_geneformer.npz adds the panel counts (research tools/96)
+    if mode == "run": np.savez(OUT / "GF_pelka.npz", latent=Z, barcodes=bc, lineage=lab, midway=mid)  # data/inputs/pelka_geneformer.npz adds the panel counts
 
 
 if __name__ == "__main__":

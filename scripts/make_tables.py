@@ -9,8 +9,8 @@ KEEP = {"A": ["Expr50", "CellCharter"], "B": ["Expr50", "CellCharter", "CADAST"]
 HI = dict(n_cov=1, R1_rep=1, R1_n=1, mono=1, n_mono=1, hallmark=1, knn=1, chimeric_ref=-1, rec_state_hi=1, rec_state_mid=1, rec_state_lo=1, id_dup=-1)
 MAIN = ["tsae_cons", "tsae", "varimax", "varimax_topk", "ica", "pca", "msae_cons", "msae"]
 # CONS_RULE=cl (paper): the symmetric consensus (tsae_cl runs) is the main consensus "tsae_cons" with its own L0-matched varimax_topk;
-# the anchored arms are kept as tsae_anchor / varimax_topk_anchor. Outputs get the suffix "cl". Default: anchored tables (TABLES_v3.md).
-CL = os.environ.get("CONS_RULE", "anchor") == "cl"; SFX = "cl" if CL else ""
+# the anchored arms are kept as tsae_anchor / varimax_topk_anchor. Outputs get the suffix "cl". Default: the paper (cl); CONS_RULE=anchor gives the version 1.0.0 tables (TABLES_v3.md).
+CL = os.environ.get("CONS_RULE", "cl") == "cl"; SFX = "cl" if CL else ""
 if CL: MAIN = MAIN[:4] + ["tsae_anchor"] + MAIN[4:]
 CLF = {"A": "T2_A_unit_batch_rs0_tsae_cl+varimax_topk_Expr50+CellCharter", "B": "T2_B_unit_batch_rs0_tsae_cl+varimax_topk_Expr50+CellCharter+CADAST", "P": "T2_P_unit_batch_rs0_tsae_cl+varimax_topk_M256"}
 
@@ -34,9 +34,9 @@ def real():
             if CL: out.append(rd(D / f"{CLF[k]}{t}.csv", s))
             o = rd(D / f"T2_{k}_unit_batch_rs0_{OLD}{t}.csv", s); keep = ["pca", "varimax", "ica"] + (["msae_cons", "msae"] if k != "P" else []); out.append(o[o.method.isin(keep)])
     d = pd.concat(out); d = d[d.apply(lambda r: r.input in KEEP[r.slide], axis=1)]
-    big = sorted(x for x in D.glob("T2_LLMbig_*.csv") if "thr0bug" not in x.name and (CL or "tsae_cl" not in x.name)); llm = big or sorted(D.glob("T2_LLM_*.csv"))
+    big = sorted(x for x in D.glob("T2_LLMbig_*.csv") if (CL or "tsae_cl" not in x.name)); llm = big or sorted(D.glob("T2_LLM_*.csv"))
     for f in llm:
-        g = ren(pd.read_csv(f), f); g["slide"] = "L"; g = g[g.method != "lpsae"]
+        g = ren(pd.read_csv(f), f); g["slide"] = "L"
         if not big: g = g[g.method != "varimax_topk"] if "tsae_cons" not in set(g.method) else g
         d = pd.concat([d, g])
     d = d.drop_duplicates(["slide", "input", "method", "seed"], keep="last"); d["R1_n"] = d.R1_rep * d.alive; d["emb"] = d.slide + ":" + d.input
